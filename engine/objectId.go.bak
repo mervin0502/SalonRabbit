@@ -1,0 +1,120 @@
+package engine
+
+import (
+	"reflect"
+	"strconv"
+	"strings"
+)
+
+//Type ObjectId
+type ObjectId struct {
+	intId    int
+	int32Id  int32
+	int64Id  int64
+	uint32Id uint32
+	uint64Id uint64
+	stringId string
+	hash     uint32
+	idType   reflect.Kind
+}
+
+//NewObjectId
+func NewObjectId(id interface{}) *ObjectId {
+	o := &ObjectId{
+		intId:    0,
+		int32Id:  0,
+		int64Id:  0,
+		uint32Id: 0,
+		uint64Id: 0,
+		stringId: "",
+	}
+	o.set(id)
+	return o
+}
+
+//func GetIdType
+func (o *ObjectId) GetIdType() reflect.Kind {
+	return o.idType
+}
+
+//
+func (o *ObjectId) set(id interface{}) {
+	v := reflect.ValueOf(id)
+	o.idType = reflect.TypeOf(id).Kind()
+	switch o.idType {
+	case reflect.Int:
+		o.intId = int(v.Int())
+		o.hash = uint32(o.intId)
+	case reflect.Int32:
+		o.int32Id = int32(v.Int())
+		o.hash = uint32(o.int32Id)
+	case reflect.Int64:
+		o.int64Id = v.Int()
+		o.hash = uint32(o.int64Id)
+	case reflect.Uint32:
+		o.uint32Id = uint32(v.Uint())
+		o.hash = o.uint32Id
+	case reflect.Uint64:
+		o.uint64Id = id.(uint64)
+		o.hash = uint32(o.uint64Id)
+	case reflect.String:
+		o.stringId = v.String()
+		o.hash = 17
+		for _, i := range o.stringId {
+			o.hash += o.hash*23 + uint32(i)
+		}
+	default:
+		panic("wrong type")
+	}
+}
+
+//Hash
+func (o *ObjectId) Hash() uint32 {
+	return o.hash
+}
+
+//Equals
+func (o *ObjectId) Equals(i *ObjectId) bool {
+	if o.idType != i.idType {
+		return false
+	}
+	if o.intId != i.intId {
+		return false
+	}
+	if o.int32Id != i.int32Id {
+		return false
+	}
+	if o.int64Id != i.int64Id {
+		return false
+	}
+	if o.uint32Id != i.uint32Id {
+		return false
+	}
+	if o.uint64Id != i.uint64Id {
+		return false
+	}
+	if !strings.EqualFold(o.stringId, i.stringId) {
+		return false
+	}
+	return true
+}
+
+//String
+func (o *ObjectId) String() string {
+	switch o.idType {
+	case reflect.Int:
+		return strconv.Itoa(o.intId)
+	case reflect.Int32:
+		return strconv.FormatInt(int64(o.int32Id), 32)
+	case reflect.Int64:
+		return strconv.FormatInt(o.int64Id, 64)
+	case reflect.Uint32:
+		return strconv.FormatUint(uint64(o.uint32Id), 32)
+	case reflect.Uint64:
+		return strconv.FormatUint(o.uint64Id, 64)
+	case reflect.String:
+		return o.stringId
+	default:
+		return ""
+	}
+}
